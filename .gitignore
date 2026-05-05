@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 venv/
 
-# Environment Variables (KRİTİK!)
+# Environment Variables 
 .env
 
 # Docker veri tabanı dosyaları
