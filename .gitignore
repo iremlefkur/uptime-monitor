@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+
+# Environment Variables (KRİTİK!)
+.env
+
+# Docker veri tabanı dosyaları
+postgres_data/
+
+# IDE
+.vscode/
+.idea/

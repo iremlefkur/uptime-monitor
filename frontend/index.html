@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servis İzleme Paneli</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: #007bff; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; color: #333; text-align: left; padding: 12px; border-bottom: 2px solid #dee2e6; font-size: 0.9rem; }
+        td { padding: 12px; border-bottom: 1px solid #dee2e6; font-size: 0.85rem; }
+        .status-healthy { color: #28a745; font-weight: bold; } /* Yeşil */
+        .status-down { color: #dc3545; font-weight: bold; }    /* Kırmızı */
+        .loading { text-align: center; padding: 20px; color: #666; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <span>🌐 Servis İzleme Paneli</span>
+        <small id="update-time">Güncelleniyor...</small>
+    </div>
+    
+    <table id="monitor-table">
+        <thead>
+            <tr>
+                <th>WEB SİTESİ</th>
+                <th>DURUM</th>
+                <th>KOD</th>
+                <th>YANIT SÜRESİ</th>
+                <th>HATA SAYISI</th>
+                <th>SON KONTROL</th>
+            </tr>
+        </thead>
+        <tbody id="data-body">
+            <tr>
+                <td colspan="6" class="loading">Veriler yükleniyor...</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    async function verileriGetir() {
+        try {
+            const response = await fetch('http://localhost:5000/api/status');
+            const data = await response.json();
+            
+            const tableBody = document.getElementById('data-body');
+            const updateTime = document.getElementById('update-time');
+            
+            tableBody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="loading">Henüz izlenen bir site verisi yok.</td></tr>';
+                return;
+            }
+
+            data.forEach(site => {
+                const tr = document.createElement('tr');
+                const isHealthy = site.status === 200;
+                
+                tr.innerHTML = `
+                    <td><strong>${site.url}</strong></td>
+                    <td class="${isHealthy ? 'status-healthy' : 'status-down'}">
+                        ${isHealthy ? '● Sağlıklı' : '○ Çöktü'}
+                    </td>
+                    <td>${site.status === 0 ? 'Hata' : site.status}</td>
+                    <td>${site.response_time}s</td>
+                    <td>${site.total_failures}</td>
+                    <td>${site.checked_at}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            updateTime.innerText = "Son güncelleme: " + new Date().toLocaleTimeString();
+
+        } catch (error) {
+            console.error("Veri çekme hatası:", error);
+            document.getElementById('data-body').innerHTML = 
+                '<tr><td colspan="6" class="loading" style="color:red">Backend bağlantısı kurulamadı!</td></tr>';
+        }
+    }
+
+    verileriGetir();
+    setInterval(verileriGetir, 10000); // 10 saniyede bir otomatik yenile
+</script>
+
+</body>
+</html>

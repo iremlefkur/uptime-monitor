@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # 1. KATMAN: VERİTABANI
+  db:
+    image: postgres:15
+    container_name: uptime_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      TZ: Europe/Istanbul
+      PGTZ: Europe/Istanbul
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - monitor_net
+
+  # 2. KATMAN: BACKEND (FLASK)
+  backend:
+    build: ./backend
+    container_name: flask_backend
+    restart: always
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      - ./siteler.json:/app/config/siteler.json:ro
+    environment:
+      TZ: Europe/Istanbul
+      DB_HOST: uptime_db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - monitor_net
+
+  # 3. KATMAN: FRONTEND (NGINX)
+  frontend:
+    build: ./frontend
+    container_name: monitor_frontend
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - monitor_net
+    environment:
+      TZ: Europe/Istanbul
+
+networks:
+  monitor_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
